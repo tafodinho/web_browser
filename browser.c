@@ -71,7 +71,7 @@ create_toolbar ()
 
     /* The forward button */
     item = gtk_tool_button_new_from_stock (GTK_STOCK_GO_FORWARD);
-    //g_signal_connect (G_OBJECT (item), "clicked", G_CALLBACK (), NULL);
+    g_signal_connect (G_OBJECT (item), "clicked", G_CALLBACK (), NULL);
     gtk_toolbar_insert (GTK_TOOLBAR (toolbar), item, -1);
 
     /* The URL entry */
