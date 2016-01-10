@@ -1,6 +1,6 @@
 #include <gtk/gtk.h>
+#include <webkit/webkit.h>
 
-/*gcc -o name_of_executable name_of_source_code `pkg-config --cflags --libs gtk+-2.0 webktit-1.0`*/
 
 static GtkWidget* main_window;
 static GtkWidget* uri_entry;
