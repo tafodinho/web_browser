@@ -12,6 +12,24 @@ static guint status_context_id;
 static GtkWidget *notebook;
 static GtkWidget *label;
 
+static GtkWidget* 
+create_notebook();
+
+static void
+activate_uri_entry_cb (GtkWidget* entry, gpointer data);
+
+static void
+link_hover_cb (WebKitWebView* page, const gchar* title, const gchar* link, gpointer data);
+
+static void
+update_title (GtkWindow* window);
+
+static void
+title_change_cb (WebKitWebView* web_view, WebKitWebFrame* web_frame, const gchar* title, gpointer data);
+
+static GtkWidget*
+create_tab_header();
+
 static void
 activate_uri_entry_cb (GtkWidget* entry, gpointer data)
 {
@@ -24,9 +42,9 @@ static void
 update_title (GtkWindow* window)
 {
     GString* string = g_string_new (main_title);
-    g_string_append (string, "Mortiff");
+    g_string_append (string, " Mortiff");
     if (load_progress < 100)
-        g_string_append_printf (string, " (%d%%)", load_progress);
+    g_string_append_printf (string, " (%d%%)", load_progress);
     gchar* title = g_string_free (string, FALSE);
     gtk_window_set_title (window, title);
     g_free (title);
@@ -87,6 +105,9 @@ static GtkWidget*
 create_browser ()
 {
     GtkWidget* scrolled_window = gtk_scrolled_window_new (NULL, NULL);
+    GtkWidget* logo;
+    
+    logo = gtk_image_new_from_file("mortiff.png");
     gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolled_window), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
 
     web_view = WEBKIT_WEB_VIEW (webkit_web_view_new ());
@@ -143,6 +164,7 @@ create_toolbar ()
     item = gtk_tool_item_new ();
     gtk_tool_item_set_expand (item, TRUE);
     uri_entry = gtk_entry_new ();
+    gtk_entry_set_text(GTK_ENTRY(uri_entry), "http://");
     gtk_container_add (GTK_CONTAINER (item), uri_entry);
     g_signal_connect (G_OBJECT (uri_entry), "activate", G_CALLBACK (activate_uri_entry_cb), NULL);
     gtk_toolbar_insert (GTK_TOOLBAR (toolbar), item, -1);
@@ -167,7 +189,6 @@ create_toolbar ()
 	item = gtk_tool_item_new ();
 	uri_entry = gtk_entry_new ();
 	gtk_container_add (GTK_CONTAINER (item), uri_entry);
-	g_signal_connect (G_OBJECT (uri_entry), "activate", G_CALLBACK (activate_uri_entry_cb), NULL);
 	gtk_toolbar_insert (GTK_TOOLBAR (toolbar), item, -1);
 	
 	/* The search go button */
@@ -189,34 +210,77 @@ create_window ()
     return window;
 }
 
+static void 
+close_tab(GtkWidget* button, GtkNotebook* notebook)
+{
+	gint page_number = gtk_notebook_get_current_page(notebook);
+	gtk_notebook_remove_page(notebook, page_number);
+	gtk_notebook_set_current_page(notebook, (page_number));
+}
+
+/*Function that creates new child */
+static GtkWidget*
+create_child()
+{
+	GtkWidget* vbox;
+	
+	vbox = gtk_vbox_new(FALSE, 0);
+	
+	gtk_box_pack_start(GTK_BOX(vbox), create_toolbar(), FALSE, FALSE, 0);
+	gtk_box_pack_start(GTK_BOX(vbox), create_browser(), TRUE, TRUE, 0);
+	
+	return vbox;
+}
+
+/* real fucntion that creates tabs */
+
+static void
+create_tab(GtkWidget *button, GtkNotebook *notebook)
+{
+	gint page_number = gtk_notebook_get_current_page(notebook);
+	page_number++;
+	gtk_notebook_append_page (GTK_NOTEBOOK (notebook), create_child(), create_tab_header());
+	
+	gtk_widget_show_all(notebook);
+}
+
+/* function to create notebook */
+static GtkWidget*
+create_tab_header()
+{
+	GtkWidget *label, *child, *hbox;
+	GtkToolItem *item, *item1;
+	GString* string = g_string_new (main_title);
+	gchar* title = g_string_free (string, FALSE);
+	
+	hbox = gtk_hbox_new(FALSE, 0);
+	item = gtk_tool_button_new_from_stock(GTK_STOCK_CLOSE);
+	g_signal_connect(G_OBJECT(item), "clicked", close_tab, (gpointer) notebook);
+	gtk_box_pack_start(GTK_BOX(hbox), item, FALSE, FALSE, 0);
+	label = gtk_label_new ("New Tab");
+	gtk_box_pack_start(GTK_BOX(hbox), label, FALSE, FALSE, 0);
+	item1 = gtk_tool_button_new_from_stock(GTK_STOCK_ADD);
+	g_signal_connect(G_OBJECT(item1), "clicked", create_tab, (gpointer) notebook);
+	gtk_box_pack_start(GTK_BOX(hbox), item1, FALSE, FALSE, 0);
+	
+	
+	
+	gtk_widget_show_all(hbox);
+	return hbox;
+}
+
 //function that creates tabs
 static GtkWidget* 
 create_notebook()
 {
-	GtkWidget *label1, *child1, *hbox;
-	GtkToolItem *item, *item2;
+	GtkToolItem *item;
 	notebook = gtk_notebook_new ();
-	hbox = gtk_hbox_new(FALSE, 0);
-	label1 = gtk_label_new ("Page One");
-	gtk_box_pack_start(GTK_BOX(hbox), label1, FALSE, FALSE, 0);
-	item2 = gtk_tool_button_new_from_stock(GTK_STOCK_CLOSE);
-	//g_signal_connect(G_OBJECT(item2), "clicked", close_tab, NULL);
-	gtk_box_pack_start(GTK_BOX(hbox), item2, FALSE, FALSE, 0);
-	item = gtk_tool_button_new_from_stock(GTK_STOCK_ADD);
-	//g_signal_connect(G_OBJECT(item), "clicked", create_notebook, NULL);
-	child1 = gtk_label_new ("Go to page 2 to find the answer.");
-
-	/* Notice that two widgets were connected to the same callback function! */
-	/*g_signal_connect (G_OBJECT (child1), "clicked",
-	G_CALLBACK (switch_page),
-	(gpointer) notebook);*/
 	
 	/* Append page to the notebook container. */
-	gtk_notebook_append_page (GTK_NOTEBOOK (notebook), create_browser(), hbox);
-	gtk_notebook_append_page (GTK_NOTEBOOK (notebook), child1, item);
+	gtk_notebook_append_page (GTK_NOTEBOOK (notebook), create_child(), create_tab_header());
+	//gtk_notebook_append_page (GTK_NOTEBOOK (notebook), child, item);
 	gtk_notebook_set_tab_pos (GTK_NOTEBOOK (notebook), GTK_POS_TOP);
 	
-	gtk_widget_show_all(hbox);
 	
 	return notebook;
 }
@@ -228,7 +292,7 @@ main (int argc, char* argv[])
 
     GtkWidget* vbox = gtk_vbox_new (FALSE, 0);
     gtk_box_pack_start (GTK_BOX (vbox), create_statusbar (), FALSE, FALSE, 0);
-    gtk_box_pack_start (GTK_BOX (vbox), create_toolbar (), FALSE, FALSE, 0);
+    //gtk_box_pack_start (GTK_BOX (vbox), create_toolbar (), FALSE, FALSE, 0);
     gtk_box_pack_start (GTK_BOX (vbox) , create_notebook (), TRUE, TRUE, 0);
     //gtk_box_pack_start (GTK_BOX (vbox), create_browser (), TRUE, TRUE, 0);
     gtk_box_pack_start (GTK_BOX (vbox), create_statusbar (), FALSE, FALSE, 0);
@@ -236,7 +300,7 @@ main (int argc, char* argv[])
     main_window = create_window ();
     gtk_container_add (GTK_CONTAINER (main_window), vbox);
 
-    gchar* uri = (gchar*) (argc > 1 ? argv[1] : "http://www.google.com/");
+    gchar* uri = (gchar*) (argc > 1 ? argv[1] : "file:///home/anonymous/Documents/js4afrika/index.html");
     webkit_web_view_open (web_view, uri);
 
     gtk_widget_grab_focus (GTK_WIDGET (web_view));
@@ -245,3 +309,4 @@ main (int argc, char* argv[])
 
     return 0;
 }
+

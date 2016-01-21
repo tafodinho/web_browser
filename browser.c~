@@ -1,6 +1,6 @@
 #include <gtk/gtk.h>
+#include <webkit/webkit.h>
 
-/*gcc -o name_of_executable name_of_source_code `pkg-config --cflags --libs gtk+-2.0 webktit-1.0`*/
 
 static GtkWidget* main_window;
 static GtkWidget* uri_entry;
@@ -130,13 +130,8 @@ create_toolbar ()
     gtk_toolbar_insert (GTK_TOOLBAR (toolbar), item, -1);
 
     /* The forward button */
-<<<<<<< HEAD
     item = gtk_tool_button_new_from_stock (GTK_STOCK_REDO);
     g_signal_connect (G_OBJECT (item), "clicked", G_CALLBACK (go_forward_cb), NULL);
-=======
-    item = gtk_tool_button_new_from_stock (GTK_STOCK_GO_FORWARD);
-    g_signal_connect (G_OBJECT (item), "clicked", G_CALLBACK (), NULL);
->>>>>>> 55c2c9ed7f22aab5701decf83381061f5398cd6a
     gtk_toolbar_insert (GTK_TOOLBAR (toolbar), item, -1);
 	
 	/* the stop button */
